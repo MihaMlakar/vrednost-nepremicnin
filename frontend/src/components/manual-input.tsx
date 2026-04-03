@@ -63,7 +63,7 @@ export function ManualInput({ onSubmit }: ManualInputProps) {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">
-                Size (m\u00b2) *
+                Size (m²) *
               </label>
               <Input
                 type="number"

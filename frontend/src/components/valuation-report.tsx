@@ -108,7 +108,7 @@ export function ValuationReport({ report, onNewAnalysis }: ValuationReportProps)
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-xs text-gray-500">Asking Price/m\u00b2</p>
+            <p className="text-xs text-gray-500">Asking Price/m²</p>
             <p className="mt-1 text-xl font-bold">
               {formatEur(report.asking_price_per_m2)}
             </p>
@@ -116,7 +116,7 @@ export function ValuationReport({ report, onNewAnalysis }: ValuationReportProps)
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-xs text-gray-500">GURS Avg/m\u00b2</p>
+            <p className="text-xs text-gray-500">GURS Avg/m²</p>
             <p className="mt-1 text-xl font-bold">
               {formatEur(report.avg_gurs_price_per_m2)}
             </p>
@@ -131,7 +131,7 @@ export function ValuationReport({ report, onNewAnalysis }: ValuationReportProps)
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <p className="text-xs text-gray-500">Size</p>
-            <p className="mt-1 text-xl font-bold">{listing.size_m2} m\u00b2</p>
+            <p className="mt-1 text-xl font-bold">{listing.size_m2} m²</p>
           </CardContent>
         </Card>
       </div>
@@ -205,7 +205,7 @@ export function ValuationReport({ report, onNewAnalysis }: ValuationReportProps)
                   <TableHead>Area</TableHead>
                   <TableHead className="text-right">Size</TableHead>
                   <TableHead className="text-right">Price</TableHead>
-                  <TableHead className="text-right">EUR/m\u00b2</TableHead>
+                  <TableHead className="text-right">EUR/m²</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -218,7 +218,7 @@ export function ValuationReport({ report, onNewAnalysis }: ValuationReportProps)
                       {comp.neighborhood}
                     </TableCell>
                     <TableCell className="text-right text-sm">
-                      {comp.size_m2} m\u00b2
+                      {comp.size_m2} m²
                     </TableCell>
                     <TableCell className="text-right text-sm">
                       {formatEur(comp.price_eur)} EUR

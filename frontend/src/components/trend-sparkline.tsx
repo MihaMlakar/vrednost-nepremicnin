@@ -59,7 +59,7 @@ export function TrendSparkline({ data }: TrendSparklineProps) {
           />
           <Tooltip
             formatter={(value) => [
-              `${Number(value).toLocaleString("sl-SI")} EUR/m\u00b2`,
+              `${Number(value).toLocaleString("sl-SI")} EUR/m²`,
               "Avg Price",
             ]}
             labelFormatter={(label) => label}
