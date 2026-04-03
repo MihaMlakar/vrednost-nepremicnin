@@ -149,28 +149,39 @@ async def scrape_listing(
     try:
         app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
-        result = app.scrape_url(
-            url,
-            params={
-                "formats": ["extract"],
-                "extract": {
-                    "schema": extraction_schema,
-                    "prompt": (
-                        "Extract real estate listing details from this page. "
-                        "Focus on the asking price, location, and apartment size. "
-                        "The price should be in EUR. Size should be the living area "
-                        "(uporabna površina), not the total area."
-                    ),
-                },
-            },
+        # Use Firecrawl extract() — scraping + LLM extraction in one call
+        result = app.extract(
+            urls=[url],
+            prompt=(
+                "Extract real estate listing details from this page. "
+                "Focus on the asking price, location, and apartment size. "
+                "The price should be in EUR. Size should be the living area "
+                "(uporabna površina), not the total area."
+            ),
+            schema=extraction_schema,
         )
 
-        if not result or "extract" not in result:
+        # extract() returns an object with a 'data' attribute
+        extracted = None
+        if hasattr(result, "data"):
+            extracted = result.data
+        elif isinstance(result, dict):
+            extracted = result.get("data") or result.get("extract") or result
+
+        if not extracted:
             raise ExtractionError("Firecrawl returned no extraction data")
 
-        extracted = result["extract"]
+        # If extracted is a list, take the first item
+        if isinstance(extracted, list):
+            extracted = extracted[0] if extracted else None
         if not extracted:
             raise ExtractionError("Extraction returned empty data")
+
+        # Convert to dict if it's a Pydantic-like object
+        if hasattr(extracted, "model_dump"):
+            extracted = extracted.model_dump()
+        elif hasattr(extracted, "__dict__") and not isinstance(extracted, dict):
+            extracted = dict(extracted)
 
         # Validate with Pydantic + range checks
         listing = ListingData(**extracted)
