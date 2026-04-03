@@ -1,0 +1,1 @@
+web: cd /app && PYTHONPATH=/app python -m backend.scripts.import_gurs 2>/dev/null; PYTHONPATH=/app uvicorn backend.main:app --host 0.0.0.0 --port $PORT
