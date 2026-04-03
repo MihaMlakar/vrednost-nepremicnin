@@ -73,20 +73,33 @@ export function ValuationReport({ report, onNewAnalysis }: ValuationReportProps)
       {/* Truth Score Card */}
       <Card className={`border-2 ${getScoreBg(truth_score)}`}>
         <CardContent className="py-8 text-center">
-          <p className="text-sm font-medium text-gray-600 uppercase tracking-wider">
-            Truth Score
+          <p className={`text-5xl font-bold ${getScoreColor(truth_score)}`}>
+            {Math.abs(truth_score).toFixed(0)}%{" "}
+            {truth_score > 0 ? "above" : truth_score < 0 ? "below" : "at"}{" "}
+            average
           </p>
-          <p className={`mt-2 text-6xl font-bold ${getScoreColor(truth_score)}`}>
-            {truth_score > 0 ? "+" : ""}
-            {truth_score.toFixed(1)}%
+          <p className="mt-2 text-base text-gray-600">
+            {report.num_comps > 0 ? (
+              <>
+                The asking price of{" "}
+                <span className="font-semibold">{formatEur(report.asking_price_per_m2)} EUR/m²</span>
+                {" "}is{" "}
+                {truth_score > 0 ? "higher" : truth_score < 0 ? "lower" : "equal to"}{" "}
+                than the average closing price of{" "}
+                <span className="font-semibold">{formatEur(report.avg_gurs_price_per_m2)} EUR/m²</span>
+                {" "}for recent sales in <span className="font-semibold">{listing.neighborhood}</span>.
+              </>
+            ) : (
+              `Not enough transaction data for ${listing.neighborhood} to compare.`
+            )}
           </p>
-          <p className={`mt-1 text-lg font-medium ${getScoreColor(truth_score)}`}>
-            {getScoreLabel(truth_score)}
-          </p>
-          <div className="mt-3">
+          <div className="mt-4 flex items-center justify-center gap-2">
             {getConfidenceBadge(report.confidence)}
+            {report.num_comps > 0 && (
+              <Badge variant="outline">Based on {report.num_comps} sales</Badge>
+            )}
             {report.cached && (
-              <Badge variant="outline" className="ml-2">Cached</Badge>
+              <Badge variant="outline">Cached</Badge>
             )}
           </div>
         </CardContent>

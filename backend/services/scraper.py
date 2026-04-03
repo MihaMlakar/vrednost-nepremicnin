@@ -14,6 +14,79 @@ FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "")
 CACHE_TTL_HOURS = 24
 
 
+def _extract_from_markdown(markdown: str, known_neighborhoods: list[str]) -> dict | None:
+    """
+    Fallback: extract listing data from scraped markdown using regex.
+    Works for nepremicnine.net page structure.
+    """
+    data: dict = {}
+
+    # Price: look for EUR amounts like "185.000 €" or "185000 EUR" or "185.000,00 €"
+    price_patterns = [
+        r"(\d{1,3}(?:\.\d{3})+(?:,\d{2})?)\s*(?:€|EUR)",
+        r"(\d{4,7}(?:,\d{2})?)\s*(?:€|EUR)",
+        r"[Cc]ena[:\s]*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)\s*(?:€|EUR)?",
+    ]
+    for pattern in price_patterns:
+        match = re.search(pattern, markdown)
+        if match:
+            price_str = match.group(1).replace(".", "").replace(",", ".")
+            try:
+                price = float(price_str)
+                if 10000 <= price <= 5000000:
+                    data["price_eur"] = price
+                    break
+            except ValueError:
+                continue
+
+    # Size: look for m2/m² amounts
+    size_patterns = [
+        r"(\d{2,4}(?:[,.]\d{1,2})?)\s*m[²2]",
+        r"[Pp]ovršina[:\s]*(\d{2,4}(?:[,.]\d{1,2})?)",
+        r"(\d{2,4}(?:[,.]\d{1,2})?)\s*(?:kvadrat|sqm)",
+    ]
+    for pattern in size_patterns:
+        match = re.search(pattern, markdown)
+        if match:
+            size_str = match.group(1).replace(",", ".")
+            try:
+                size = float(size_str)
+                if 10 <= size <= 500:
+                    data["size_m2"] = size
+                    break
+            except ValueError:
+                continue
+
+    # Neighborhood: check if any known neighborhood appears in text
+    for neighborhood in known_neighborhoods:
+        if neighborhood.lower() in markdown.lower():
+            data["neighborhood"] = neighborhood
+            break
+
+    # City: default to Ljubljana
+    data["city"] = "Ljubljana"
+
+    # Year built
+    year_match = re.search(r"[Ll]eto\s+(?:izgradnje|gradnje)[:\s]*(\d{4})", markdown)
+    if not year_match:
+        year_match = re.search(r"[Zz]grajeno[:\s]*(\d{4})", markdown)
+    if year_match:
+        year = int(year_match.group(1))
+        if 1800 <= year <= 2026:
+            data["year_built"] = year
+
+    # Floor
+    floor_match = re.search(r"(\d{1,2})\.\s*(?:nadstropje|etaža)", markdown)
+    if floor_match:
+        data["floor"] = int(floor_match.group(1))
+
+    # Validate we have minimum required fields
+    if "price_eur" in data and "size_m2" in data and "neighborhood" in data:
+        return data
+
+    return None
+
+
 class InvalidURLError(Exception):
     pass
 
@@ -149,39 +222,62 @@ async def scrape_listing(
     try:
         app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
-        # Use Firecrawl extract() — scraping + LLM extraction in one call
-        result = app.extract(
-            urls=[url],
-            prompt=(
-                "Extract real estate listing details from this page. "
-                "Focus on the asking price, location, and apartment size. "
-                "The price should be in EUR. Size should be the living area "
-                "(uporabna površina), not the total area."
-            ),
-            schema=extraction_schema,
-        )
-
-        # extract() returns an object with a 'data' attribute
+        # Use scrape() to get markdown, then extract() for structured data
+        # Try extract first (async LLM extraction), fall back to scrape + regex
         extracted = None
-        if hasattr(result, "data"):
-            extracted = result.data
-        elif isinstance(result, dict):
-            extracted = result.get("data") or result.get("extract") or result
+
+        try:
+            result = app.extract(
+                urls=[url],
+                prompt=(
+                    "Extract real estate listing details from this Slovenian "
+                    "real estate listing page. Return the asking price in EUR, "
+                    "city, neighborhood/district, living area in m2, year built, "
+                    "floor number, and a brief description."
+                ),
+                schema=extraction_schema,
+            )
+
+            # Handle various response formats
+            if hasattr(result, "data") and result.data:
+                extracted = result.data
+            elif isinstance(result, dict):
+                extracted = result.get("data") or result.get("results")
+
+            # Unwrap list
+            if isinstance(extracted, list) and extracted:
+                extracted = extracted[0]
+
+            # Convert objects to dict
+            if extracted and hasattr(extracted, "model_dump"):
+                extracted = extracted.model_dump()
+            elif extracted and hasattr(extracted, "__dict__") and not isinstance(extracted, dict):
+                extracted = {k: v for k, v in extracted.__dict__.items() if not k.startswith("_")}
+
+        except Exception as extract_err:
+            print(f"extract() failed, falling back to scrape(): {extract_err}")
+            extracted = None
+
+        # Fallback: scrape markdown and parse with regex
+        if not extracted or not isinstance(extracted, dict) or "price_eur" not in extracted:
+            print("Using scrape() fallback with regex extraction")
+            doc = app.scrape(url, formats=["markdown"])
+
+            markdown = ""
+            if hasattr(doc, "markdown"):
+                markdown = doc.markdown or ""
+            elif isinstance(doc, dict):
+                markdown = doc.get("markdown", "")
+
+            if len(markdown) < 50:
+                raise ExtractionError(
+                    "Could not access this listing. The page may require a CAPTCHA or be unavailable."
+                )
+
+            extracted = _extract_from_markdown(markdown, known_neighborhoods)
 
         if not extracted:
-            raise ExtractionError("Firecrawl returned no extraction data")
-
-        # If extracted is a list, take the first item
-        if isinstance(extracted, list):
-            extracted = extracted[0] if extracted else None
-        if not extracted:
-            raise ExtractionError("Extraction returned empty data")
-
-        # Convert to dict if it's a Pydantic-like object
-        if hasattr(extracted, "model_dump"):
-            extracted = extracted.model_dump()
-        elif hasattr(extracted, "__dict__") and not isinstance(extracted, dict):
-            extracted = dict(extracted)
+            raise ExtractionError("Could not extract listing details from this page.")
 
         # Validate with Pydantic + range checks
         listing = ListingData(**extracted)
