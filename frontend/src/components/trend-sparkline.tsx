@@ -22,8 +22,8 @@ interface TrendSparklineProps {
 function formatMonth(month: string): string {
   const [year, m] = month.split("-");
   const months = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "jan", "feb", "mar", "apr", "maj", "jun",
+    "jul", "avg", "sep", "okt", "nov", "dec",
   ];
   return `${months[parseInt(m) - 1]} ${year.slice(2)}`;
 }
@@ -35,23 +35,23 @@ export function TrendSparkline({ data }: TrendSparklineProps) {
   }));
 
   return (
-    <div className="h-48 w-full">
+    <div className="h-52 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData}>
           <defs>
             <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#1f2937" stopOpacity={0.1} />
-              <stop offset="95%" stopColor="#1f2937" stopOpacity={0} />
+              <stop offset="5%" stopColor="#E54E05" stopOpacity={0.15} />
+              <stop offset="95%" stopColor="#E54E05" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11, fill: "#9ca3af" }}
+            tick={{ fontSize: 11, fill: "#737373", fontFamily: "Source Sans 3" }}
             tickLine={false}
             axisLine={false}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#9ca3af" }}
+            tick={{ fontSize: 11, fill: "#737373", fontFamily: "Source Sans 3" }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
@@ -60,19 +60,21 @@ export function TrendSparkline({ data }: TrendSparklineProps) {
           <Tooltip
             formatter={(value) => [
               `${Number(value).toLocaleString("sl-SI")} EUR/m²`,
-              "Avg Price",
+              "Povprečna cena",
             ]}
             labelFormatter={(label) => label}
             contentStyle={{
-              fontSize: 12,
-              borderRadius: 8,
-              border: "1px solid #e5e7eb",
+              fontSize: 13,
+              fontFamily: "Source Sans 3",
+              borderRadius: 12,
+              border: "1px solid #e5e5e5",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
             }}
           />
           <Area
             type="monotone"
             dataKey="avg_price_m2"
-            stroke="#1f2937"
+            stroke="#E54E05"
             strokeWidth={2}
             fill="url(#colorPrice)"
           />

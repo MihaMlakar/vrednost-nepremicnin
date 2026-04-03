@@ -9,7 +9,7 @@ async def find_comparables(
     db: aiosqlite.Connection,
     neighborhood: str,
     size_m2: float,
-    size_tolerance: float = 0.10,
+    size_tolerance: float = 0.25,
     months_back: int = 24,
     limit: int = 10,
 ) -> list[GURSTransaction]:

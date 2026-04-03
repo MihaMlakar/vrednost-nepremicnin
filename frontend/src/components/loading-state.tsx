@@ -1,21 +1,24 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { IconLoader2 } from "@tabler/icons-react";
 
 export function LoadingState() {
   return (
-    <div className="mx-auto max-w-2xl">
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-16">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
-          <p className="mt-4 text-lg font-medium text-gray-900">
-            Analyzing listing...
-          </p>
-          <p className="mt-1 text-sm text-gray-500">
-            Scraping data and matching against GURS transactions
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-2xl mx-auto"
+    >
+      <div className="bg-white border border-neutral-100 shadow-sm rounded-2xl p-12 text-center">
+        <IconLoader2 size={48} className="mx-auto text-brand-accent animate-spin" />
+        <p className="mt-4 font-heading text-xl font-bold tracking-tight text-neutral-950">
+          Analiziramo oglas...
+        </p>
+        <p className="mt-2 font-sans text-base text-neutral-500">
+          Pridobivamo podatke in primerjamo s transakcijami GURS
+        </p>
+      </div>
+    </motion.div>
   );
 }

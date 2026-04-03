@@ -68,36 +68,36 @@ def _generate_lever(
     abs_score = abs(truth_score)
 
     if num_comps == 0:
-        return f"Not enough transaction data for {neighborhood} to determine fair value."
+        return f"Premalo podatkov o transakcijah za {neighborhood} za določitev poštene vrednosti."
 
     if truth_score > 15:
         return (
-            f"This property is {abs_score:.0f}% above the transaction average for "
-            f"{neighborhood}. Based on {num_comps} recent sales, the average closing "
-            f"price is {avg_gurs:,.0f} EUR/m\u00b2 vs asking {asking:,.0f} EUR/m\u00b2. "
-            f"Strong negotiation position."
+            f"Ta nepremičnina je {abs_score:.0f}% nad povprečjem transakcij za "
+            f"{neighborhood}. Na podlagi {num_comps} nedavnih prodaj je povprečna zaključna "
+            f"cena {avg_gurs:,.0f} EUR/m² v primerjavi z oglaševano ceno {asking:,.0f} EUR/m². "
+            f"Močna pogajalska pozicija."
         )
     elif truth_score > 5:
         return (
-            f"This property is {abs_score:.0f}% above the transaction average for "
-            f"{neighborhood}. Based on {num_comps} recent sales at {avg_gurs:,.0f} EUR/m\u00b2, "
-            f"there is room to negotiate."
+            f"Ta nepremičnina je {abs_score:.0f}% nad povprečjem transakcij za "
+            f"{neighborhood}. Na podlagi {num_comps} nedavnih prodaj pri {avg_gurs:,.0f} EUR/m² "
+            f"obstaja prostor za pogajanje."
         )
     elif truth_score > -5:
         return (
-            f"This property is priced near the transaction average for {neighborhood}. "
-            f"Based on {num_comps} recent sales at {avg_gurs:,.0f} EUR/m\u00b2, "
-            f"the asking price of {asking:,.0f} EUR/m\u00b2 appears fair."
+            f"Ta nepremičnina je v okviru povprečja transakcij za {neighborhood}. "
+            f"Na podlagi {num_comps} nedavnih prodaj pri {avg_gurs:,.0f} EUR/m² "
+            f"se oglaševana cena {asking:,.0f} EUR/m² zdi poštena."
         )
     elif truth_score > -15:
         return (
-            f"This property is {abs_score:.0f}% below the transaction average for "
-            f"{neighborhood}. At {asking:,.0f} EUR/m\u00b2 vs average {avg_gurs:,.0f} EUR/m\u00b2, "
-            f"this looks like a good deal."
+            f"Ta nepremičnina je {abs_score:.0f}% pod povprečjem transakcij za "
+            f"{neighborhood}. Pri {asking:,.0f} EUR/m² v primerjavi s povprečjem {avg_gurs:,.0f} EUR/m² "
+            f"gre za ugoden nakup."
         )
     else:
         return (
-            f"This property is {abs_score:.0f}% below the transaction average for "
-            f"{neighborhood}. At {asking:,.0f} EUR/m\u00b2 vs average {avg_gurs:,.0f} EUR/m\u00b2, "
-            f"this is significantly underpriced. Investigate why."
+            f"Ta nepremičnina je {abs_score:.0f}% pod povprečjem transakcij za "
+            f"{neighborhood}. Pri {asking:,.0f} EUR/m² v primerjavi s povprečjem {avg_gurs:,.0f} EUR/m² "
+            f"je cena izrazito pod tržno vrednostjo. Preverite zakaj."
         )

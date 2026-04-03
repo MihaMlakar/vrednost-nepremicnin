@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { IconAlertTriangle } from "@tabler/icons-react";
 
 interface ErrorStateProps {
   message: string;
@@ -10,21 +10,26 @@ interface ErrorStateProps {
 
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
-    <div className="mx-auto max-w-2xl">
-      <Card className="border-red-200">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <span className="text-2xl">!</span>
-          </div>
-          <p className="mt-4 text-lg font-medium text-gray-900">
-            Analysis failed
-          </p>
-          <p className="mt-1 text-sm text-gray-600">{message}</p>
-          <Button onClick={onRetry} variant="outline" className="mt-6">
-            Try again
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-2xl mx-auto"
+    >
+      <div className="bg-white border border-red-200 shadow-sm rounded-2xl p-12 text-center">
+        <div className="w-12 h-12 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+          <IconAlertTriangle size={24} className="text-red-600" />
+        </div>
+        <p className="mt-4 font-heading text-xl font-bold tracking-tight text-neutral-950">
+          Analiza ni uspela
+        </p>
+        <p className="mt-2 font-sans text-base text-neutral-600">{message}</p>
+        <button
+          onClick={onRetry}
+          className="mt-6 px-4 py-2 text-sm font-semibold rounded-full bg-transparent border border-neutral-950 text-neutral-950 hover:bg-neutral-50 transition-all active:scale-95"
+        >
+          Poskusite znova
+        </button>
+      </div>
+    </motion.div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion } from "framer-motion";
+import { IconBuildingEstate, IconSearch, IconEdit } from "@tabler/icons-react";
 import { UrlInput } from "@/components/url-input";
 import { ManualInput } from "@/components/manual-input";
 import { ValuationReport } from "@/components/valuation-report";
@@ -11,6 +12,7 @@ import { ErrorState } from "@/components/error-state";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 type AppState = "empty" | "loading" | "success" | "error";
+type InputMode = "url" | "manual";
 
 export interface ReportData {
   listing: {
@@ -49,6 +51,7 @@ export default function Home() {
   const [state, setState] = useState<AppState>("empty");
   const [report, setReport] = useState<ReportData | null>(null);
   const [error, setError] = useState<string>("");
+  const [inputMode, setInputMode] = useState<InputMode>("url");
 
   async function analyzeUrl(url: string) {
     setState("loading");
@@ -61,13 +64,13 @@ export default function Home() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || "Analysis failed");
+        throw new Error(err.detail || "Analiza ni uspela");
       }
       const data = await res.json();
       setReport(data);
       setState("success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      setError(e instanceof Error ? e.message : "Nekaj je šlo narobe");
       setState("error");
     }
   }
@@ -89,13 +92,13 @@ export default function Home() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || "Analysis failed");
+        throw new Error(err.detail || "Analiza ni uspela");
       }
       const reportData = await res.json();
       setReport(reportData);
       setState("success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      setError(e instanceof Error ? e.message : "Nekaj je šlo narobe");
       setState("error");
     }
   }
@@ -107,56 +110,119 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="border-b bg-white">
-        <div className="mx-auto max-w-4xl px-4 py-6">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            Vrednost Nepremičnin
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Compare asking prices against actual GURS transaction data
-          </p>
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="border-b border-neutral-100 bg-white">
+        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-brand-accent rounded-xl flex items-center justify-center">
+              <IconBuildingEstate size={20} className="text-white" />
+            </div>
+            <div>
+              <h1 className="font-heading text-xl font-bold tracking-tight text-neutral-950">
+                Vrednost Nepremičnin
+              </h1>
+            </div>
+          </div>
+          {state === "success" && (
+            <button
+              onClick={reset}
+              className="px-4 py-2 text-sm font-semibold rounded-full bg-transparent border border-neutral-950 text-neutral-950 hover:bg-neutral-50 transition-all active:scale-95"
+            >
+              Nova analiza
+            </button>
+          )}
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      {/* Main content */}
+      <main className="max-w-6xl mx-auto px-6">
         {state === "empty" && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-                Check the truth about any listing
+          <section className="py-16 sm:py-24">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center max-w-2xl mx-auto"
+            >
+              <span className="px-2 py-1 text-xs font-bold uppercase tracking-widest rounded-full bg-brand-accent/10 text-brand-accent inline-block">
+                GURS podatki
+              </span>
+              <h2 className="mt-6 font-heading text-[clamp(2rem,5vw,2.75rem)] font-bold tracking-tight leading-none text-neutral-950">
+                Preverite realno vrednost nepremičnine
               </h2>
-              <p className="mt-2 text-lg text-gray-600">
-                Paste a nepremicnine.net URL or enter details manually
+              <p className="mt-4 font-sans text-lg leading-relaxed text-neutral-600">
+                Primerjajte oglaševane cene z dejanskimi zaključnimi cenami iz
+                GURS evidence trga nepremičnin.
               </p>
-            </div>
+            </motion.div>
 
-            <Tabs defaultValue="url" className="mx-auto max-w-2xl">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="url">Paste URL</TabsTrigger>
-                <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-              </TabsList>
-              <TabsContent value="url" className="mt-4">
+            {/* Input mode toggle */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="mt-10 max-w-2xl mx-auto"
+            >
+              <div className="flex gap-2 mb-6 justify-center">
+                <button
+                  onClick={() => setInputMode("url")}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all active:scale-95 ${
+                    inputMode === "url"
+                      ? "bg-neutral-950 text-white"
+                      : "bg-transparent border border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+                  }`}
+                >
+                  <IconSearch size={16} />
+                  Vnesi povezavo
+                </button>
+                <button
+                  onClick={() => setInputMode("manual")}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all active:scale-95 ${
+                    inputMode === "manual"
+                      ? "bg-neutral-950 text-white"
+                      : "bg-transparent border border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+                  }`}
+                >
+                  <IconEdit size={16} />
+                  Ročni vnos
+                </button>
+              </div>
+
+              {inputMode === "url" ? (
                 <UrlInput onSubmit={analyzeUrl} />
-              </TabsContent>
-              <TabsContent value="manual" className="mt-4">
+              ) : (
                 <ManualInput onSubmit={analyzeManual} />
-              </TabsContent>
-            </Tabs>
-          </div>
+              )}
+            </motion.div>
+          </section>
         )}
 
-        {state === "loading" && <LoadingState />}
-        {state === "error" && <ErrorState message={error} onRetry={reset} />}
+        {state === "loading" && (
+          <section className="py-16 sm:py-24">
+            <LoadingState />
+          </section>
+        )}
+
+        {state === "error" && (
+          <section className="py-16 sm:py-24">
+            <ErrorState message={error} onRetry={reset} />
+          </section>
+        )}
+
         {state === "success" && report && (
-          <ValuationReport report={report} onNewAnalysis={reset} />
+          <section className="py-10">
+            <ValuationReport report={report} onNewAnalysis={reset} />
+          </section>
         )}
       </main>
 
-      <footer className="mt-auto border-t bg-white py-4">
-        <div className="mx-auto max-w-4xl px-4 text-center text-xs text-gray-400">
-          Data source: GURS ETN (Evidenca trga nepremičnin). For informational
-          purposes only.
+      {/* Footer */}
+      <footer className="mt-auto border-t border-neutral-100 bg-neutral-50 py-6">
+        <div className="max-w-6xl mx-auto px-6 text-center">
+          <p className="font-sans text-sm text-neutral-500">
+            Vir podatkov: GURS ETN (Evidenca trga nepremičnin). Samo za informativne namene.
+          </p>
         </div>
       </footer>
     </div>
