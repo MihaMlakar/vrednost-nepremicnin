@@ -5,10 +5,10 @@ __pycache__/
 *.egg-info/
 .env
 
-# SQLite
-*.db
+# SQLite (ignore temp files, but keep the real data DB)
 *.db-wal
 *.db-shm
+data/vrednost.db
 
 # Node
 node_modules/

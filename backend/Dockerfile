@@ -7,9 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app/backend/
 
-RUN mkdir -p /app/backend/data
-
 ENV PYTHONPATH=/app
 ENV DATABASE_PATH=/app/backend/data/vrednost.db
 
-CMD ["sh", "-c", "cd /app && python -m backend.scripts.import_gurs 2>/dev/null; exec uvicorn backend.main:app --host 0.0.0.0 --port \"$PORT\""]
+CMD ["sh", "-c", "exec uvicorn backend.main:app --host 0.0.0.0 --port \"$PORT\""]
