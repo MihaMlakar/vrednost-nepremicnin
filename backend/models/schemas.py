@@ -18,6 +18,7 @@ KNOWN_NEIGHBORHOODS = [
     "Galjevica",
     "Glince",
     "Jarše",
+    "Ježica",
     "Kodeljevo",
     "Koseze",
     "Moste",

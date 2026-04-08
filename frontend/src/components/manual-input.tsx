@@ -5,8 +5,9 @@ import { IconArrowRight } from "@tabler/icons-react";
 
 const NEIGHBORHOODS = [
   "Bežigrad", "Center", "Črnuče", "Dravlje", "Fužine",
-  "Jarše", "Kodeljevo", "Moste", "Polje", "Rožna dolina",
-  "Rudnik", "Šentvid", "Šiška", "Trnovo", "Vič",
+  "Jarše", "Ježica", "Kodeljevo", "Koseze", "Moste",
+  "Murgle", "Polje", "Rožna dolina", "Rudnik", "Šentvid",
+  "Šiška", "Štepanjsko naselje", "Trnovo", "Vič", "Zelena jama",
 ];
 
 interface ManualInputProps {
