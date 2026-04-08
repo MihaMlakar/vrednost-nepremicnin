@@ -26,18 +26,27 @@ async def find_comparables(
     max_size = size_m2 * (1 + size_tolerance)
     cutoff_date = (date.today() - timedelta(days=months_back * 30)).isoformat()
 
+    # Handle comma-separated neighborhoods (e.g. "Bežigrad, Ježica")
+    # Try each part as a separate match, plus the full string
+    neighborhood_variants = [neighborhood.strip()]
+    if "," in neighborhood:
+        neighborhood_variants.extend([p.strip() for p in neighborhood.split(",")])
+
+    placeholders = ",".join(["?" for _ in neighborhood_variants])
+    params = neighborhood_variants + [min_size, max_size, cutoff_date, size_m2, limit]
+
     cursor = await db.execute(
-        """
+        f"""
         SELECT id, transaction_date, municipality, neighborhood, property_type,
                size_m2, price_eur, price_per_m2, year_built, floor, total_floors
         FROM gurs_transactions
-        WHERE neighborhood = ?
+        WHERE neighborhood IN ({placeholders})
           AND size_m2 BETWEEN ? AND ?
           AND transaction_date >= ?
         ORDER BY ABS(size_m2 - ?) ASC, transaction_date DESC
         LIMIT ?
         """,
-        (neighborhood, min_size, max_size, cutoff_date, size_m2, limit),
+        params,
     )
 
     rows = await cursor.fetchall()
@@ -70,18 +79,26 @@ async def get_price_trend(
     """
     cutoff_date = (date.today() - timedelta(days=months_back * 30)).isoformat()
 
+    # Handle comma-separated neighborhoods
+    neighborhood_variants = [neighborhood.strip()]
+    if "," in neighborhood:
+        neighborhood_variants.extend([p.strip() for p in neighborhood.split(",")])
+
+    placeholders = ",".join(["?" for _ in neighborhood_variants])
+    params = neighborhood_variants + [cutoff_date]
+
     cursor = await db.execute(
-        """
+        f"""
         SELECT strftime('%Y-%m', transaction_date) as month,
                ROUND(AVG(price_per_m2), 0) as avg_price_m2,
                COUNT(*) as num_transactions
         FROM gurs_transactions
-        WHERE neighborhood = ?
+        WHERE neighborhood IN ({placeholders})
           AND transaction_date >= ?
         GROUP BY strftime('%Y-%m', transaction_date)
         ORDER BY month ASC
         """,
-        (neighborhood, cutoff_date),
+        params,
     )
 
     rows = await cursor.fetchall()
