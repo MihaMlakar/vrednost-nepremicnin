@@ -26,11 +26,23 @@ async def find_comparables(
     max_size = size_m2 * (1 + size_tolerance)
     cutoff_date = (date.today() - timedelta(days=months_back * 30)).isoformat()
 
-    # Handle comma-separated neighborhoods (e.g. "Bežigrad, Ježica")
-    # Try each part as a separate match, plus the full string
-    neighborhood_variants = [neighborhood.strip()]
+    # Normalize neighborhood: handle "Lj. Bežigrad", "Bežigrad, Ježica", etc.
+    neighborhood_variants = set()
+    neighborhood_variants.add(neighborhood.strip())
+
+    # Split comma-separated (e.g. "Bežigrad, Ježica")
     if "," in neighborhood:
-        neighborhood_variants.extend([p.strip() for p in neighborhood.split(",")])
+        for part in neighborhood.split(","):
+            neighborhood_variants.add(part.strip())
+
+    # Strip common prefixes like "Lj.", "Ljubljana -", "MB."
+    expanded = set()
+    for n in neighborhood_variants:
+        expanded.add(n)
+        for prefix in ["Lj. ", "Lj.", "LJ. ", "LJ.", "MB. ", "MB.", "Ljubljana - ", "Ljubljana "]:
+            if n.startswith(prefix):
+                expanded.add(n[len(prefix):].strip())
+    neighborhood_variants = list(expanded)
 
     placeholders = ",".join(["?" for _ in neighborhood_variants])
     params = neighborhood_variants + [min_size, max_size, cutoff_date, size_m2, limit]
@@ -79,10 +91,19 @@ async def get_price_trend(
     """
     cutoff_date = (date.today() - timedelta(days=months_back * 30)).isoformat()
 
-    # Handle comma-separated neighborhoods
-    neighborhood_variants = [neighborhood.strip()]
+    # Normalize neighborhood variants (same logic as find_comparables)
+    neighborhood_variants = set()
+    neighborhood_variants.add(neighborhood.strip())
     if "," in neighborhood:
-        neighborhood_variants.extend([p.strip() for p in neighborhood.split(",")])
+        for part in neighborhood.split(","):
+            neighborhood_variants.add(part.strip())
+    expanded = set()
+    for n in neighborhood_variants:
+        expanded.add(n)
+        for prefix in ["Lj. ", "Lj.", "LJ. ", "LJ.", "MB. ", "MB.", "Ljubljana - ", "Ljubljana "]:
+            if n.startswith(prefix):
+                expanded.add(n[len(prefix):].strip())
+    neighborhood_variants = list(expanded)
 
     placeholders = ",".join(["?" for _ in neighborhood_variants])
     params = neighborhood_variants + [cutoff_date]
