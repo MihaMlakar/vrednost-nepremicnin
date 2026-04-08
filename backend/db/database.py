@@ -5,6 +5,11 @@ import os
 
 DATABASE_PATH = os.getenv("DATABASE_PATH", "data/vrednost.db")
 
+# Log the database path and existence on module load
+_db_exists = os.path.exists(DATABASE_PATH)
+_db_size = os.path.getsize(DATABASE_PATH) if _db_exists else 0
+print(f"DATABASE_PATH={DATABASE_PATH} exists={_db_exists} size={_db_size}")
+
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS gurs_transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
