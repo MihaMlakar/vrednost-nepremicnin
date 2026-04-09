@@ -160,9 +160,16 @@ def find_csv_files(path: str) -> dict:
     return files
 
 
+PROPERTY_TYPES = {
+    "1": "house",
+    "2": "apartment",
+}
+
+
 def import_gurs_data(path: str, conn: sqlite3.Connection) -> dict:
-    """Import real GURS ETN data from CSV files."""
-    stats = {"imported": 0, "skipped": 0, "duplicates": 0, "errors": 0, "apartments": 0}
+    """Import real GURS ETN data from CSV files (apartments + houses + land)."""
+    stats = {"imported": 0, "skipped": 0, "duplicates": 0, "errors": 0,
+             "apartments": 0, "houses": 0, "land": 0}
 
     files = find_csv_files(path)
     if "posli" not in files or "delistavb" not in files:
@@ -187,13 +194,17 @@ def import_gurs_data(path: str, conn: sqlite3.Connection) -> dict:
         reader = csv.DictReader(f)
         for row_num, row in enumerate(reader, 1):
             try:
-                # Filter: only apartments (VRSTA_DELA_STAVBE = 2)
+                # Filter: apartments (2) and houses (1)
                 vrsta = row.get("VRSTA_DELA_STAVBE", "").strip()
-                if vrsta != "2":
+                if vrsta not in PROPERTY_TYPES:
                     stats["skipped"] += 1
                     continue
 
-                stats["apartments"] += 1
+                property_type = PROPERTY_TYPES[vrsta]
+                if property_type == "apartment":
+                    stats["apartments"] += 1
+                else:
+                    stats["houses"] += 1
 
                 id_posla = row["ID_POSLA"]
                 posel = posli.get(id_posla)
@@ -217,7 +228,7 @@ def import_gurs_data(path: str, conn: sqlite3.Connection) -> dict:
                     stats["skipped"] += 1
                     continue
                 size = float(size_str.replace(",", "."))
-                if size <= 0 or size > 500:
+                if size <= 0 or size > 2000:
                     stats["skipped"] += 1
                     continue
 
@@ -276,7 +287,7 @@ def import_gurs_data(path: str, conn: sqlite3.Connection) -> dict:
                         date_str,
                         municipality,
                         neighborhood,
-                        "apartment",
+                        property_type,
                         size,
                         price,
                         price_per_m2,
@@ -291,6 +302,74 @@ def import_gurs_data(path: str, conn: sqlite3.Connection) -> dict:
                 stats["errors"] += 1
                 if stats["errors"] <= 10:
                     print(f"  Row {row_num}: {e}")
+
+    # Import land transactions (ZEMLJISCA) if available
+    if "zemljisca" in files:
+        with open(files["zemljisca"], "r", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row_num, row in enumerate(reader, 1):
+                try:
+                    id_posla = row["ID_POSLA"]
+                    posel = posli.get(id_posla)
+                    if not posel:
+                        continue
+
+                    neighborhood = normalize_ko(row.get("IME_KO", ""))
+                    if not neighborhood:
+                        continue
+
+                    size_str = row.get("POVRSINA_PARCELE", "").strip()
+                    if not size_str:
+                        continue
+                    size = float(size_str.replace(",", "."))
+                    if size <= 0:
+                        continue
+
+                    price_str = row.get("POGODBENA_CENA_PARCELE", "").strip()
+                    if not price_str:
+                        # Fall back to total transaction price
+                        price_str = posel.get("POGODBENA_CENA_ODSKODNINA", "").strip()
+                    if not price_str:
+                        continue
+                    price = float(price_str.replace(",", "."))
+                    if price <= 0 or price > 10000000:
+                        continue
+
+                    price_per_m2 = round(price / size, 2)
+
+                    date_str = parse_date(
+                        posel.get("DATUM_SKLENITVE_POGODBE", "")
+                        or posel.get("DATUM_UVELJAVITVE", "")
+                    )
+                    if not date_str:
+                        continue
+
+                    municipality = row.get("OBCINA", "").strip()
+                    source = os.path.basename(files["zemljisca"])
+
+                    conn.execute(
+                        """INSERT OR IGNORE INTO gurs_transactions
+                        (transaction_date, municipality, neighborhood, property_type,
+                         size_m2, price_eur, price_per_m2, year_built, floor, source_file)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            date_str,
+                            municipality,
+                            neighborhood,
+                            "land",
+                            size,
+                            price,
+                            price_per_m2,
+                            None,  # no year_built for land
+                            None,  # no floor for land
+                            source,
+                        ),
+                    )
+                    stats["land"] += 1
+                    stats["imported"] += 1
+
+                except (ValueError, KeyError) as e:
+                    stats["errors"] += 1
 
     conn.commit()
     return stats
@@ -308,36 +387,29 @@ def main():
     conn.execute("PRAGMA busy_timeout=5000")
     conn.executescript(SCHEMA_SQL)
 
-    total_stats = {"imported": 0, "skipped": 0, "duplicates": 0, "errors": 0, "apartments": 0}
+    total_stats = {"imported": 0, "skipped": 0, "duplicates": 0, "errors": 0,
+                    "apartments": 0, "houses": 0, "land": 0}
 
     for path in sys.argv[1:]:
         print(f"\nImporting from {path}...")
         stats = import_gurs_data(path, conn)
         for k in total_stats:
-            total_stats[k] += stats[k]
+            total_stats[k] += stats.get(k, 0)
 
     # Print stats
     print(f"\n{'='*50}")
     print(f"Import complete:")
-    print(f"  Apartments found: {total_stats['apartments']}")
-    print(f"  Imported:         {total_stats['imported']}")
-    print(f"  Skipped:          {total_stats['skipped']}")
-    print(f"  Duplicates:       {total_stats['duplicates']}")
-    print(f"  Errors:           {total_stats['errors']}")
+    print(f"  Apartments: {total_stats['apartments']}")
+    print(f"  Houses:     {total_stats['houses']}")
+    print(f"  Land:       {total_stats['land']}")
+    print(f"  Imported:   {total_stats['imported']}")
+    print(f"  Skipped:    {total_stats['skipped']}")
+    print(f"  Errors:     {total_stats['errors']}")
 
-    # Print neighborhood distribution
-    cursor = conn.execute(
-        """SELECT neighborhood, COUNT(*), ROUND(AVG(price_per_m2), 0),
-                  ROUND(MIN(price_per_m2), 0), ROUND(MAX(price_per_m2), 0)
-           FROM gurs_transactions
-           GROUP BY neighborhood
-           ORDER BY COUNT(*) DESC"""
-    )
-    print(f"\nNeighborhood distribution:")
-    print(f"  {'Neighborhood':25s}  {'Count':>5s}  {'Avg €/m²':>8s}  {'Min':>6s}  {'Max':>6s}")
-    print(f"  {'-'*25}  {'-'*5}  {'-'*8}  {'-'*6}  {'-'*6}")
-    for row in cursor.fetchall():
-        print(f"  {row[0]:25s}  {row[1]:5d}  {row[2]:8,.0f}  {row[3]:6,.0f}  {row[4]:6,.0f}")
+    # Print by property type
+    for ptype in ['apartment', 'house', 'land']:
+        count = conn.execute("SELECT COUNT(*) FROM gurs_transactions WHERE property_type = ?", (ptype,)).fetchone()[0]
+        print(f"\n  {ptype.upper()} transactions: {count}")
 
     total = conn.execute("SELECT COUNT(*) FROM gurs_transactions").fetchone()[0]
     print(f"\nTotal transactions in database: {total}")
