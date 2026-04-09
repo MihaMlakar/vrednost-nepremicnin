@@ -15,7 +15,12 @@ from backend.models.schemas import (
     ListingData,
     ValuationReport,
 )
-from backend.services.comparison import find_comparables, get_price_trend
+from backend.services.comparison import (
+    find_comparables,
+    find_wider_area_comparables,
+    get_price_trend,
+    get_wider_neighborhoods_for_municipality,
+)
 from backend.services.scraper import (
     ExtractionError,
     InvalidURLError,
@@ -100,10 +105,32 @@ async def analyze_listing(request: AnalyzeRequest):
                 detail="Either 'url' or 'manual' input is required",
             )
 
-        # Find comparable GURS transactions
+        # Find comparable GURS transactions (neighborhood-level)
         comps = await find_comparables(
             db=db,
             neighborhood=listing.neighborhood,
+            size_m2=listing.size_m2,
+        )
+
+        # Find wider area comparables
+        municipality = listing.city.upper() if listing.city else "LJUBLJANA"
+        # Try to detect municipality from DB
+        cursor = await db.execute(
+            "SELECT municipality FROM gurs_transactions WHERE neighborhood = ? LIMIT 1",
+            (listing.neighborhood,),
+        )
+        row = await cursor.fetchone()
+        if row:
+            municipality = row[0]
+
+        wider_neighborhoods = await get_wider_neighborhoods_for_municipality(
+            db=db,
+            neighborhood=listing.neighborhood,
+            municipality=municipality,
+        )
+        wider_comps = await find_wider_area_comparables(
+            db=db,
+            wider_neighborhoods=wider_neighborhoods,
             size_m2=listing.size_m2,
         )
 
@@ -113,12 +140,14 @@ async def analyze_listing(request: AnalyzeRequest):
             neighborhood=listing.neighborhood,
         )
 
-        # Calculate valuation
+        # Calculate valuation with both scores
         report = calculate_valuation(
             listing=listing,
             comps=comps,
             trend=trend,
             cached=cached,
+            wider_comps=wider_comps,
+            wider_neighborhoods=wider_neighborhoods,
         )
 
         return report

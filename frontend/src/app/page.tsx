@@ -45,6 +45,22 @@ export interface ReportData {
     num_transactions: number;
   }>;
   cached: boolean;
+  // Wider area score
+  wider_truth_score: number | null;
+  wider_negotiation_lever: string | null;
+  wider_avg_gurs_price_per_m2: number | null;
+  wider_num_comps: number | null;
+  wider_confidence: string | null;
+  wider_comps: Array<{
+    transaction_date: string;
+    neighborhood: string;
+    size_m2: number;
+    price_eur: number;
+    price_per_m2: number;
+    year_built?: number;
+    floor?: number;
+  }> | null;
+  wider_neighborhoods: string[] | null;
 }
 
 export default function Home() {

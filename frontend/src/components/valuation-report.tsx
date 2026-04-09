@@ -127,6 +127,65 @@ export function ValuationReport({
         </div>
       </motion.div>
 
+      {/* Wider Area Score Card */}
+      {report.wider_truth_score != null && report.wider_num_comps != null && report.wider_num_comps > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.05 }}
+        >
+          <div className="border rounded-2xl p-6 sm:p-8 bg-neutral-50 border-neutral-200">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <p className="font-sans text-sm font-semibold text-neutral-500 uppercase tracking-widest">
+                  Širše območje
+                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className={`font-heading text-3xl font-bold ${getScoreColor(report.wider_truth_score)}`}>
+                    {Math.abs(report.wider_truth_score).toFixed(0)}%
+                  </span>
+                  <span className={`font-sans text-base font-semibold ${getScoreColor(report.wider_truth_score)}`}>
+                    {report.wider_truth_score > 0
+                      ? "nad povprečjem"
+                      : report.wider_truth_score < 0
+                        ? "pod povprečjem"
+                        : "v okviru povprečja"}
+                  </span>
+                </div>
+                <p className="mt-1 font-sans text-sm text-neutral-500">
+                  {report.wider_negotiation_lever}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-heading text-2xl font-bold text-neutral-950">
+                  {report.wider_avg_gurs_price_per_m2 ? formatEur(report.wider_avg_gurs_price_per_m2) : "—"} EUR/m²
+                </p>
+                <p className="font-sans text-sm text-neutral-500">
+                  povprečje ({report.wider_num_comps} prodaj)
+                </p>
+              </div>
+            </div>
+            {report.wider_neighborhoods && report.wider_neighborhoods.length > 1 && (
+              <div className="mt-3 flex flex-wrap gap-1">
+                {report.wider_neighborhoods.slice(0, 8).map((n) => (
+                  <span
+                    key={n}
+                    className="px-2 py-0.5 text-xs rounded-full bg-neutral-200/60 text-neutral-600"
+                  >
+                    {n}
+                  </span>
+                ))}
+                {report.wider_neighborhoods.length > 8 && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-neutral-200/60 text-neutral-600">
+                    +{report.wider_neighborhoods.length - 8}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
       {/* Negotiation Lever */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

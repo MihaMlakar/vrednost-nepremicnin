@@ -95,6 +95,7 @@ class ValuationReport(BaseModel):
     """The complete valuation report returned to the user."""
 
     listing: ListingData
+    # Neighborhood-level score (primary)
     truth_score: float  # percentage: negative = overpriced
     negotiation_lever: str  # human-readable summary
     avg_gurs_price_per_m2: float
@@ -104,6 +105,14 @@ class ValuationReport(BaseModel):
     comps: list[GURSTransaction]
     trend: list[TrendPoint]
     cached: bool = False
+    # Wider area score (secondary)
+    wider_truth_score: Optional[float] = None
+    wider_negotiation_lever: Optional[str] = None
+    wider_avg_gurs_price_per_m2: Optional[float] = None
+    wider_num_comps: Optional[int] = None
+    wider_confidence: Optional[str] = None
+    wider_comps: Optional[list[GURSTransaction]] = None
+    wider_neighborhoods: Optional[list[str]] = None
 
 
 class AnalyzeRequest(BaseModel):
