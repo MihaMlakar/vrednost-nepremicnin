@@ -125,12 +125,13 @@ async def find_comparables(
     db: aiosqlite.Connection,
     neighborhood: str,
     size_m2: float,
+    property_type: str = "apartment",
     size_tolerance: float = 0.25,
     months_back: int = 24,
     limit: int = 10,
 ) -> list:
     """
-    Find GURS transactions matching the listing criteria (exact neighborhood).
+    Find GURS transactions matching the listing criteria (exact neighborhood + property type).
     """
     min_size = size_m2 * (1 - size_tolerance)
     max_size = size_m2 * (1 + size_tolerance)
@@ -139,7 +140,7 @@ async def find_comparables(
     neighborhood_variants = _normalize_neighborhood(neighborhood)
 
     placeholders = ",".join(["?" for _ in neighborhood_variants])
-    params = neighborhood_variants + [min_size, max_size, cutoff_date, size_m2, limit]
+    params = neighborhood_variants + [property_type, min_size, max_size, cutoff_date, size_m2, limit]
 
     cursor = await db.execute(
         f"""
@@ -147,6 +148,7 @@ async def find_comparables(
                size_m2, price_eur, price_per_m2, year_built, floor, total_floors
         FROM gurs_transactions
         WHERE neighborhood IN ({placeholders})
+          AND property_type = ?
           AND size_m2 BETWEEN ? AND ?
           AND transaction_date >= ?
         ORDER BY ABS(size_m2 - ?) ASC, transaction_date DESC
@@ -171,12 +173,13 @@ async def find_wider_area_comparables(
     db: aiosqlite.Connection,
     wider_neighborhoods: list,
     size_m2: float,
+    property_type: str = "apartment",
     size_tolerance: float = 0.25,
     months_back: int = 24,
     limit: int = 20,
 ) -> list:
     """
-    Find GURS transactions across the wider area (neighborhood + adjacent).
+    Find GURS transactions across the wider area (neighborhood + adjacent), filtered by property type.
     """
     min_size = size_m2 * (1 - size_tolerance)
     max_size = size_m2 * (1 + size_tolerance)
@@ -186,7 +189,7 @@ async def find_wider_area_comparables(
         return []
 
     placeholders = ",".join(["?" for _ in wider_neighborhoods])
-    params = wider_neighborhoods + [min_size, max_size, cutoff_date, size_m2, limit]
+    params = wider_neighborhoods + [property_type, min_size, max_size, cutoff_date, size_m2, limit]
 
     cursor = await db.execute(
         f"""
@@ -194,6 +197,7 @@ async def find_wider_area_comparables(
                size_m2, price_eur, price_per_m2, year_built, floor, total_floors
         FROM gurs_transactions
         WHERE neighborhood IN ({placeholders})
+          AND property_type = ?
           AND size_m2 BETWEEN ? AND ?
           AND transaction_date >= ?
         ORDER BY ABS(size_m2 - ?) ASC, transaction_date DESC

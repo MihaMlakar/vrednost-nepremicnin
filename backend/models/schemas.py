@@ -44,6 +44,9 @@ class ListingData(BaseModel):
     city: str = Field(description="City name, e.g. Ljubljana")
     neighborhood: str = Field(description="Neighborhood name, e.g. Šiška, Bežigrad")
     size_m2: float = Field(ge=10, le=2000, description="Living area in square meters")
+    property_type: Optional[str] = Field(
+        default=None, description="Property type: apartment, house, or land"
+    )
     year_built: Optional[int] = Field(
         ge=1800, le=2026, default=None, description="Year the building was constructed"
     )

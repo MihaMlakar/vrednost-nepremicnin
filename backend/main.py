@@ -105,16 +105,27 @@ async def analyze_listing(request: AnalyzeRequest):
                 detail="Either 'url' or 'manual' input is required",
             )
 
-        # Find comparable GURS transactions (neighborhood-level)
+        # Detect property type from URL or listing data
+        property_type = listing.property_type or "apartment"
+        if request.url and not listing.property_type:
+            url_lower = request.url.lower()
+            if "hisa" in url_lower or "hiša" in url_lower:
+                property_type = "house"
+            elif "zemljisce" in url_lower or "zemljišče" in url_lower or "parcela" in url_lower:
+                property_type = "land"
+            elif "stanovanje" in url_lower:
+                property_type = "apartment"
+
+        # Find comparable GURS transactions (neighborhood-level, same property type)
         comps = await find_comparables(
             db=db,
             neighborhood=listing.neighborhood,
             size_m2=listing.size_m2,
+            property_type=property_type,
         )
 
-        # Find wider area comparables
+        # Find wider area comparables (same property type)
         municipality = listing.city.upper() if listing.city else "LJUBLJANA"
-        # Try to detect municipality from DB
         cursor = await db.execute(
             "SELECT municipality FROM gurs_transactions WHERE neighborhood = ? LIMIT 1",
             (listing.neighborhood,),
@@ -132,6 +143,7 @@ async def analyze_listing(request: AnalyzeRequest):
             db=db,
             wider_neighborhoods=wider_neighborhoods,
             size_m2=listing.size_m2,
+            property_type=property_type,
         )
 
         # Get price trend data
