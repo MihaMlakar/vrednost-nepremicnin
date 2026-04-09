@@ -43,7 +43,7 @@ class ListingData(BaseModel):
     price_eur: float = Field(ge=10000, le=5000000, description="Asking price in EUR")
     city: str = Field(description="City name, e.g. Ljubljana")
     neighborhood: str = Field(description="Neighborhood name, e.g. Šiška, Bežigrad")
-    size_m2: float = Field(ge=10, le=500, description="Living area in square meters")
+    size_m2: float = Field(ge=10, le=2000, description="Living area in square meters")
     year_built: Optional[int] = Field(
         ge=1800, le=2026, default=None, description="Year the building was constructed"
     )
@@ -62,7 +62,7 @@ class ManualListingInput(BaseModel):
 
     price_eur: float = Field(ge=10000, le=5000000)
     neighborhood: str
-    size_m2: float = Field(ge=10, le=500)
+    size_m2: float = Field(ge=10, le=2000)
     year_built: Optional[int] = Field(ge=1800, le=2026, default=None)
     floor: Optional[int] = None
 

@@ -51,7 +51,7 @@ def _extract_from_markdown(markdown: str, known_neighborhoods: list[str]) -> dic
             size_str = match.group(1).replace(",", ".")
             try:
                 size = float(size_str)
-                if 10 <= size <= 500:
+                if 10 <= size <= 2000:
                     data["size_m2"] = size
                     break
             except ValueError:
